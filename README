@@ -1,0 +1,16 @@
+# usage
+
+Open tv.html or projecteur.html in your brower.
+
+# dev
+
+$ npm install
+to get dev dependencies
+
+Then
+$ npm start
+to run the dev server (recompile every time a js file changes), open your browser at http://locahost:3000/projecteur.html
+
+Then
+$ npm run assemble
+to build to dist/projo-app.js and dist/tv-app.js files so users don't need node, npm, babel, webpack and all their dependencies to run the app.
