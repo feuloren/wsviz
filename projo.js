@@ -8,7 +8,14 @@ var width = 1100,
     height = 700,
     barHeight = 20,
     animDuration = 1500,
-    transitionDuration = 1000;
+    transitionDuration = 1000,
+    prixMax = 350,
+    prixMin = 100,
+    pointsAffiches = 6,
+    strokeWidthBars = 2,
+    minutesStep = 2;
+
+var margin = {top: 30, right: 30, bottom: 30, left: 80};
 
 var yIn = height + 1,
     yOut = -50;
@@ -22,10 +29,10 @@ d3.json(urls.history, (error, json) => {
   
 });
 
-var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "grey", "yellow", "fuschia", "green"];
+var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "#F1E4F3", "#A30015", "#DEF6CA", "#C6A15B", "#DF10FA", "#6EEB83", "#FE621D"];
 
-var x = d3.scale.linear().range([width, 0]).domain([0, 10]);
-var y = d3.scale.linear().range([height, 0]).domain([100, 300]);
+var x = d3.scale.linear().range([width - margin.right, margin.left]).domain([0, pointsAffiches]);
+var y = d3.scale.linear().range([height - margin.top, margin.bottom]).domain([prixMin, prixMax]);
 
 var data = require("./history.js");
 var data2 = require("./history2.js");
@@ -35,14 +42,7 @@ var graph = d3.select("#graph")
       .attr("width", width)
       .attr("height", height);
 
-var data1 = [data[0], data[1]];
-
-var beers = graph.selectAll("g")
-      .data(data1, d => d.id)
-      .enter().append("g");
-
-var lines = beers.selectAll("line")
-      .data(d => d.prices, p => p.date);
+var beers = graph.selectAll("g.bar");
 
 var enterLines = function(lines, data) {
   var len = data[0].prices.length - 1;
@@ -51,15 +51,10 @@ var enterLines = function(lines, data) {
     .attr("x1", (d, i, j) => x(len - i))
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("stroke", (d, i, j) => couleurs[j]) // couleur
-    .attr("stroke-width", 2)
+    .attr("stroke-width", 0)
     .attr("y1", yIn)
     .attr("y2", yIn);
-    // .transition().duration(transitionDuration)
-    // .attr("y1", d => y(d.price))
-    // .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price));
 };
-
-// enterLines(lines, data1);
 
 var tbody = d3.select("#prix tbody");
 var tr = tbody.selectAll("tr").data(data).enter().append("tr");
@@ -99,10 +94,10 @@ var later = function(data, timeout) {
       nom.html("Multiple").style("color", "white");
     }
 
-    var g = graph.selectAll("g").data(data, d => d.id);
+    var g = graph.selectAll("g.bar").data(data, d => d.id);
 
     // creer un groupe pour les nouvelles bières
-    g.enter().append("g");
+    g.enter().append("g").classed("bar", true);
 
     // supprimer les anciennes en faisant disparaitre chaque ligne vers le haut
     g.exit().transition().each(function(d, i) {
@@ -123,7 +118,8 @@ var later = function(data, timeout) {
       .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
       .attr("y1", d => y(d.price))
       .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price))
-      .attr("stroke", (d, i, j) => couleurs[j]);
+      .attr("stroke", (d, i, j) => couleurs[j])
+      .attr("stroke-width", (d, i) => ((len - i) > pointsAffiches || i == len) ? 0 : strokeWidthBars);
 
     console.log(timeout + " done");
   }, timeout);
@@ -137,23 +133,58 @@ var upTable = function(data, timeout) {
   }, timeout);
 };
 
-later(data1, 1);
-later([data[0], data[2]], 2000);
+var vAxis = d3.svg.axis()
+      .scale(y)
+      .orient('left')
+      .ticks((prixMax - prixMin) / 10);
 
-later([data2[0], data2[2]], 5000);
-upTable(data2, 5500);
+var verticalGuide = graph.append('g');
+vAxis(verticalGuide);
+verticalGuide.attr('transform', 'translate(' + margin.left + ')');
+verticalGuide.selectAll('path')
+    .style({fill: 'none', stroke: "#f0f0f0"});
+verticalGuide.selectAll('line')
+    .style({stroke: "#f0f0f0"});
+verticalGuide.selectAll('text')
+  .text(d => formatPrice(d) + "€")
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
 
-later([data3[0], data3[2]], 7000);
-upTable(data3, 7500);
+var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient('bottom')
+      .ticks(pointsAffiches);
 
-later([data3[1]],  9000);
-later([data3[3]], 10500);
-later([data3[2]], 13000);
-later([data3[4]], 15500);
-later([data3[0]], 17000);
-later(data3, 18500);
+var horizontalGuide = graph.append('g');
+xAxis(horizontalGuide);
+horizontalGuide.attr('transform', 'translate(0, ' + (height - margin.bottom) + ')');
+horizontalGuide.selectAll('path')
+    .style({fill: 'none', stroke: "#f0f0f0"});
+horizontalGuide.selectAll('line')
+    .style({stroke: "#f0f0f0"});
+horizontalGuide.selectAll('text')
+  .text(d => d == 0 ? "Now" : ("-" + d * minutesStep + " m"))
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
 
-var pages = [
-  pressions,
-  bouteilles,
-];
+
+later(data, 1);
+upTable(data, 1);
+// later([data[0], data[2]], 2000);
+
+// later([data2[0], data2[2]], 3000);
+later(data2, 2000);
+upTable(data2, 2500);
+
+// later([data3[0], data3[2]], 7000);
+upTable(data3, 4500);
+
+// later([data3[1]],  9000);
+// later([data3[3]], 10500);
+// later([data3[2]], 13000);
+// later([data3[4]], 15500);
+// later([data3[0]], 17000);
+later(data3, 4500);
+
+// var pages = [
+  // pressions,
+  // bouteilles,
+// ];
