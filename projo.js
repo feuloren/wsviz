@@ -1,6 +1,7 @@
 import d3 from "d3";
 import {urls} from "./config.js";
 
+
 // var data;
 
 var width = 1100,
@@ -9,61 +10,19 @@ var width = 1100,
     animDuration = 1500,
     transitionDuration = 1000;
 
-var x = d3.scale.linear()
-        .range([0, width]);
+var yIn = height + 1,
+    yOut = -50;
 
-var price = biere => biere.last_price.price;
-/*
-d3.json(urls.last, (error, json) => {
+d3.json(urls.history, (error, json) => {
   if (error !== null) {
     console.log(error);
+    return;
   }
 
-  data = json;
-
-  x.domain([0, d3.max(data, price)]);
-
-  var chart = d3.select(".chart")
-        .attr("width", width)
-        .attr("height", barHeight * data.length);
-
-  var bar = chart.selectAll("g")
-        .data(data)
-        .enter().append("g")
-        .attr("transform", (d, i) => "translate(0," + i * barHeight + ")");
-
-  bar.append("rect")
-    .attr("height", barHeight - 1)
-    .attr("width", 0)
-    .transition()
-    .duration(animDuration)
-    .attr("width", d => x(price(d)));
-
-  bar.append("text")
-    .attr("y", barHeight / 2)
-    .attr("dy", ".35em")
-    .text(d => d.name)
-    .attr("x", -3)
-    .transition()
-    .duration(animDuration)
-    .attr("x", d => x(price(d)) - 3);
-
-});*/
-
-/*d3.select("body").transition().duration(750).style("background-color", function() {
-  return "hsl(" + Math.random() * 360 + ",100%,50%)";
+  
 });
-d3.select("body").data(urls.history).style("background-color", "blue");
-var data = [4, 8, 150, 16, 23, 42];*/
 
-
-/*d3.select(".chart").selectAll("div")
- .data(data)
- .enter().append("div")
- .style("width", d => x(d) + "px")
- .text(d => d);*/
-
-var couleurs = ["red", "blue", "green", "black"];
+var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "grey", "yellow", "fuschia", "green"];
 
 var x = d3.scale.linear().range([width, 0]).domain([0, 10]);
 var y = d3.scale.linear().range([height, 0]).domain([100, 300]);
@@ -93,14 +52,14 @@ var enterLines = function(lines, data) {
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("stroke", (d, i, j) => couleurs[j]) // couleur
     .attr("stroke-width", 2)
-    .attr("y1", height + 1)
-    .attr("y2", height + 1)
-    .transition().duration(transitionDuration)
-    .attr("y1", d => y(d.price))
-    .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price));
+    .attr("y1", yIn)
+    .attr("y2", yIn);
+    // .transition().duration(transitionDuration)
+    // .attr("y1", d => y(d.price))
+    // .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price));
 };
 
-enterLines(lines, data1);
+// enterLines(lines, data1);
 
 var tbody = d3.select("#prix tbody");
 var tr = tbody.selectAll("tr").data(data).enter().append("tr");
@@ -134,9 +93,10 @@ var later = function(data, timeout) {
   window.setTimeout(() => {
     if (data.length == 1) {
       var last = data[0].prices[data[0].prices.length - 1];
-      nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation));
+      nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation))
+        .style("color", couleurs[0]);
     } else {
-      nom.html("Multiple");
+      nom.html("Multiple").style("color", "white");
     }
 
     var g = graph.selectAll("g").data(data, d => d.id);
@@ -146,7 +106,7 @@ var later = function(data, timeout) {
 
     // supprimer les anciennes en faisant disparaitre chaque ligne vers le haut
     g.exit().transition().each(function(d, i) {
-      d3.select(this).transition().duration(transitionDuration).selectAll("line").attr("y1", -1).attr("y2", -1);
+      d3.select(this).transition().duration(transitionDuration).selectAll("line").attr("y1", yOut).attr("y2", yOut);
     }).remove();
 
     // mise à jour des lignes
@@ -177,6 +137,7 @@ var upTable = function(data, timeout) {
   }, timeout);
 };
 
+later(data1, 1);
 later([data[0], data[2]], 2000);
 
 later([data2[0], data2[2]], 5000);
@@ -189,4 +150,10 @@ later([data3[1]],  9000);
 later([data3[3]], 10500);
 later([data3[2]], 13000);
 later([data3[4]], 15500);
+later([data3[0]], 17000);
+later(data3, 18500);
 
+var pages = [
+  pressions,
+  bouteilles,
+];
