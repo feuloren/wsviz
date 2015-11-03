@@ -103,7 +103,7 @@ module.exports = [
         "date": "2015-10-26T15:57:19.015Z",
         "price": 200,
         "sold": 0,
-        "variation": 0
+        "variation": 0.9
       }
     ]
   },
@@ -157,7 +157,7 @@ module.exports = [
         "date": "2015-10-26T15:57:19.015Z",
         "price": 150,
         "sold": 0,
-        "variation": 0
+        "variation": -2
       }
     ]
   },
@@ -211,7 +211,7 @@ module.exports = [
         "date": "2015-10-26T15:57:19.015Z",
         "price": 130,
         "sold": 0,
-        "variation": 0
+        "variation": 0.8
       }
     ]
   },
@@ -265,7 +265,7 @@ module.exports = [
         "date": "2015-10-26T15:57:19.015Z",
         "price": 160,
         "sold": 0,
-        "variation": 0
+        "variation": 0.5
       }
     ]
   }

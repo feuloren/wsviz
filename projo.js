@@ -112,8 +112,33 @@ var td = tr.selectAll("td").data(rows)
       .enter().append("td")
       .html(d => d);
 
+var nom = d3.select("#nom");
+
+function formatPrice(price) {
+  return (price / 100).toFixed(2).replace(".", ",");
+}
+
+function formatVariation(variation) {
+  var sym;
+  if (variation == 0) {
+    sym = "=";
+  } else if (variation > 0) {
+    sym = "↗";
+  } else {
+    sym = "↙";
+  }
+  return sym + " (" + (variation >= 0 ? "+" : "") + variation.toFixed(2).replace(".", ",") + "%)";
+}
+
 var later = function(data, timeout) {
   window.setTimeout(() => {
+    if (data.length == 1) {
+      var last = data[0].prices[data[0].prices.length - 1];
+      nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation));
+    } else {
+      nom.html("Multiple");
+    }
+
     var g = graph.selectAll("g").data(data, d => d.id);
 
     // creer un groupe pour les nouvelles bières
