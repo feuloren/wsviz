@@ -1,9 +1,6 @@
 import d3 from "d3";
 import {urls} from "./config.js";
 
-
-// var data;
-
 var width = 1100,
     height = 700,
     barHeight = 20,
@@ -13,21 +10,12 @@ var width = 1100,
     prixMin = 100,
     pointsAffiches = 6,
     strokeWidthBars = 2,
-    minutesStep = 2;
-
-var margin = {top: 30, right: 30, bottom: 30, left: 80};
-
-var yIn = height + 1,
-    yOut = -50;
-
-d3.json(urls.history, (error, json) => {
-  if (error !== null) {
-    console.log(error);
-    return;
-  }
-
-  
-});
+    minutesStep = 1,
+    margin = {top: 30, right: 30, bottom: 30, left: 80},
+    yIn = height + 1,
+    yOut = -50,
+    categorie = {PRESSION: 11, BOUTEILLE: 10},
+    updateDelay = 10000;
 
 var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "#F1E4F3", "#A30015", "#DEF6CA", "#C6A15B", "#DF10FA", "#6EEB83", "#FE621D"];
 
@@ -38,6 +26,7 @@ var data = require("./history.js");
 var data2 = require("./history2.js");
 var data3 = require("./history3.js");
 
+// graphique
 var graph = d3.select("#graph")
       .attr("width", width)
       .attr("height", height);
@@ -55,16 +44,6 @@ var enterLines = function(lines, data) {
     .attr("y1", yIn)
     .attr("y2", yIn);
 };
-
-var tbody = d3.select("#prix tbody");
-var tr = tbody.selectAll("tr").data(data).enter().append("tr");
-var rows = function(biere) {
-  var last = biere.prices[biere.prices.length - 1];
-  return [biere.name, last.price, last.variation];
-};
-var td = tr.selectAll("td").data(rows)
-      .enter().append("td")
-      .html(d => d);
 
 var nom = d3.select("#nom");
 
@@ -84,55 +63,49 @@ function formatVariation(variation) {
   return sym + " (" + (variation >= 0 ? "+" : "") + variation.toFixed(2).replace(".", ",") + "%)";
 }
 
-var later = function(data, timeout) {
-  window.setTimeout(() => {
-    if (data.length == 1) {
-      var last = data[0].prices[data[0].prices.length - 1];
-      nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation))
-        .style("color", couleurs[0]);
-    } else {
-      nom.html("Multiple").style("color", "white");
-    }
+var upGraph = function(data, titre) {
+  nom.html(titre).style("color", "white");
+  /*if (data.length == 1) {
+    var last = data[0].prices[data[0].prices.length - 1];
+    nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation))
+      .style("color", couleurs[0]);
+  } else {
+    nom.html("Multiple").style("color", "white");
+  }*/
 
-    var g = graph.selectAll("g.bar").data(data, d => d.id);
+  var g = graph.selectAll("g.bar").data(data, d => d.id);
 
-    // creer un groupe pour les nouvelles bières
-    g.enter().append("g").classed("bar", true);
+  // creer un groupe pour les nouvelles bières
+  g.enter().append("g").classed("bar", true);
 
-    // supprimer les anciennes en faisant disparaitre chaque ligne vers le haut
-    g.exit().transition().each(function(d, i) {
-      d3.select(this).transition().duration(transitionDuration).selectAll("line").attr("y1", yOut).attr("y2", yOut);
-    }).remove();
+  // supprimer les anciennes en faisant disparaitre chaque ligne vers le haut
+  g.exit().transition().each(function(d, i) {
+    d3.select(this).transition().duration(transitionDuration).selectAll("line").attr("y1", yOut).attr("y2", yOut);
+  }).remove();
 
-    // mise à jour des lignes
-    var lines = g.selectAll("line")
-          .data(d => d.prices, p => p.date);    
+  // mise à jour des lignes
+  var lines = g.selectAll("line")
+        .data(d => d.prices, p => p.date);    
 
-    // tracer les nouvelles lignes
-    enterLines(lines, data);
+  // tracer les nouvelles lignes
+  enterLines(lines, data);
 
-    // mettre à jour les lignes existantes, qui vont se décaler vers la gauche en fonction des nouvelles données
-    var len = data[0].prices.length - 1;
-    lines.transition().duration(transitionDuration)
-      .attr("x1", (d, i, j) => x(len - i))
-      .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
-      .attr("y1", d => y(d.price))
-      .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price))
-      .attr("stroke", (d, i, j) => couleurs[j])
-      .attr("stroke-width", (d, i) => ((len - i) > pointsAffiches || i == len) ? 0 : strokeWidthBars);
-
-    console.log(timeout + " done");
-  }, timeout);
+  // mettre à jour les lignes existantes, qui vont se décaler vers la gauche en fonction des nouvelles données
+  var len = data[0].prices.length - 1;
+  lines.transition().duration(transitionDuration)
+    .attr("x1", (d, i, j) => x(len - i))
+    .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
+    .attr("y1", d => y(d.price))
+    .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price))
+    .attr("stroke", (d, i, j) => couleurs[j])
+    .attr("stroke-width", (d, i) => ((len - i) > pointsAffiches || i == len) ? 0 : strokeWidthBars);
 };
 
-var upTable = function(data, timeout) {
-  window.setTimeout(() => {
-    var tr = tbody.selectAll("tr").data(data);
-    var td = tr.selectAll("td").data(rows)
-          .html(d => d);
-  }, timeout);
+var later = function(data, timeout, titre) {
+  window.setTimeout(() => upGraph(data, titre), timeout);
 };
 
+// création des axes
 var vAxis = d3.svg.axis()
       .scale(y)
       .orient('left')
@@ -165,24 +138,101 @@ horizontalGuide.selectAll('text')
   .text(d => d == 0 ? "Now" : ("-" + d * minutesStep + " m"))
   .style({stroke: "#f0f0f0", "stroke-width": 0.5});
 
+// tableau des prix
+var tbody = d3.select("#prix tbody");
+  var rows = function(biere) {
+    var last = biere.prices[biere.prices.length - 1];
+    return [biere.name, last.price, last.variation];
+  };
 
-later(data, 1);
-upTable(data, 1);
+var creerTable = function(data) {
+  var tr = tbody.selectAll("tr").data(data).enter().append("tr");
+  var td = tr.selectAll("td").data(rows)
+        .enter().append("td")
+        .html(d => d);
+};
+
+var upTable = function(data, timeout) {
+  window.setTimeout(() => {
+    var tr = tbody.selectAll("tr").data(data);
+    var td = tr.selectAll("td").data(rows)
+          .html(d => d);
+  }, timeout);
+};
+
+//later(data, 1);
+//upTable(data, 1);
 // later([data[0], data[2]], 2000);
 
 // later([data2[0], data2[2]], 3000);
-later(data2, 2000);
-upTable(data2, 2500);
+//later(data2, 2000);
+//upTable(data2, 2500);
 
 // later([data3[0], data3[2]], 7000);
-upTable(data3, 4500);
+//upTable(data3, 4500);
 
 // later([data3[1]],  9000);
 // later([data3[3]], 10500);
 // later([data3[2]], 13000);
 // later([data3[4]], 15500);
 // later([data3[0]], 17000);
-later(data3, 4500);
+//later(data3, 4500);
+
+var initialData;
+var lastUpdateTime = "";
+d3.json(urls.history, (error, json) => {
+  if (error !== null) {
+    console.log(error);
+    return;
+  }
+  initialData = json;
+
+  upGraph(initialData);
+  creerTable(initialData);
+
+  if (initialData.length > 0) {
+    var prices = initialData[0].prices;
+    console.log(prices[prices.length - 1]);
+    lastUpdateTime = prices[prices.length - 1].date;
+  }
+
+  doUpdates(updateDelay);
+});
+
+var doUpdates = function(delay) {
+  window.setTimeout(() => {
+    d3.json(urls.last, (error, json) => {
+      doUpdates(delay); // reschedule update
+
+      if (error != null) {
+        console.log(error);
+        return;
+      }
+
+      if (json.length > 0) {
+        // check if last data is actually new
+        var date = json[0].last_price.date;
+        console.log("last", lastUpdateTime, "new", date);
+
+        if (date != lastUpdateTime) {
+          lastUpdateTime = date;
+
+          console.log("update");
+
+          // je suppose que les bières sont toujours à la même position
+          // on ajoute le last price dans initialData
+          for (var i = 0; i < json.length; i++) {
+            initialData[i].prices.push(json[i].last_price);
+          }
+
+          // mise à jour
+          upGraph(initialData);
+          upTable(initialData, 300);
+        }
+      }
+    });
+  }, delay);
+};
 
 // var pages = [
   // pressions,
