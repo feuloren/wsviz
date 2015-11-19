@@ -9,16 +9,20 @@
              color: white;
              background-color: #202020;
          }
+
+         #prix {
+             float: right;
+         }
         </style>
     </head>
     <body>
         <!-- <svg class="chart"></svg> -->
         <p id="nom">Multiple</p>
-        <svg id="graph"></svg>
         <table id="prix">
-            <thead><tr><td>Bière</td><td>Prix</td><td>Variation</td></tr></thead>
+            <thead><tr><td>Bière</td><td>Prix</td><td>Prix original</td><td>Variation</td></tr></thead>
             <tbody></tbody>
         </table>
+        <svg id="graph"></svg>
         <!-- <div class="chart"></div> -->
         
         <script type="text/javascript" src="dist/projo-app.js"></script>

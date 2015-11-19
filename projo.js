@@ -14,7 +14,8 @@ var width = 1100,
     margin = {top: 30, right: 30, bottom: 30, left: 80},
     yIn = height + 1,
     yOut = -50,
-    categorie = {PRESSION: 11, BOUTEILLE: 10},
+    categories = {PRESSION: 11, BOUTEILLE: 10},
+    nomCategories = {PRESSION: "Bières Pression", BOUTEILLE: "Bières Bouteille"},
     updateDelay = 10000;
 
 var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "#F1E4F3", "#A30015", "#DEF6CA", "#C6A15B", "#DF10FA", "#6EEB83", "#FE621D"];
@@ -140,21 +141,26 @@ horizontalGuide.selectAll('text')
 
 // tableau des prix
 var tbody = d3.select("#prix tbody");
-  var rows = function(biere) {
-    var last = biere.prices[biere.prices.length - 1];
-    return [biere.name, last.price, last.variation];
-  };
+var rows = function(biere) {
+  var last = biere.prices[biere.prices.length - 1];
+  return [biere.name, formatPrice(last.price), formatPrice(biere.prices[0].price), formatVariation(last.variation)];
+};
 
 var creerTable = function(data) {
-  var tr = tbody.selectAll("tr").data(data).enter().append("tr");
+  var tr = tbody.selectAll("tr").data(data, d => d.id);
+  tr.enter().append("tr");
+  tr.exit().remove();
   var td = tr.selectAll("td").data(rows)
         .enter().append("td")
         .html(d => d);
 };
 
 var upTable = function(data, timeout) {
+  creerTable(data);
   window.setTimeout(() => {
     var tr = tbody.selectAll("tr").data(data);
+    tr.style("color", (d, i) => couleurs[i]);
+
     var td = tr.selectAll("td").data(rows)
           .html(d => d);
   }, timeout);
@@ -180,6 +186,25 @@ var upTable = function(data, timeout) {
 
 var initialData;
 var lastUpdateTime = "";
+var currentPage = "BOUTEILLE";
+
+var selectOnly = (data, categorie) => data.filter(b => b.category == categorie);
+
+var alternerPage = function(duration) {
+  if (currentPage == "PRESSION") {
+    currentPage = "BOUTEILLE";
+  } else {
+    currentPage = "PRESSION";
+  }
+  console.log(currentPage);
+
+  var data = selectOnly(initialData, categories[currentPage]);
+  console.log(data);
+  upGraph(data, nomCategories[currentPage]);
+  upTable(data, 300);
+};
+
+var firstTimeout;
 d3.json(urls.history, (error, json) => {
   if (error !== null) {
     console.log(error);
@@ -187,51 +212,57 @@ d3.json(urls.history, (error, json) => {
   }
   initialData = json;
 
-  upGraph(initialData);
-  creerTable(initialData);
+  var data = selectOnly(initialData, categories[currentPage]);
+  console.log(data);
+  upGraph(data, nomCategories[currentPage]);
+  upTable(data, 300);
+  firstTimeout = window.setTimeout(() => alternerPage(30000), 20000);
 
   if (initialData.length > 0) {
     var prices = initialData[0].prices;
-    console.log(prices[prices.length - 1]);
     lastUpdateTime = prices[prices.length - 1].date;
   }
 
-  doUpdates(updateDelay);
+  window.setInterval(doUpdates, updateDelay);
 });
 
-var doUpdates = function(delay) {
-  window.setTimeout(() => {
-    d3.json(urls.last, (error, json) => {
-      doUpdates(delay); // reschedule update
+var firstUpdate = true;
+var doUpdates = function() {
+  d3.json(urls.last, (error, json) => {
+    if (error != null) {
+      console.log(error);
+      return;
+    }
 
-      if (error != null) {
-        console.log(error);
-        return;
-      }
+    if (json.length > 0) {
+      // check if last data is actually new
+      var date = json[0].last_price.date;
 
-      if (json.length > 0) {
-        // check if last data is actually new
-        var date = json[0].last_price.date;
-        console.log("last", lastUpdateTime, "new", date);
+      if (date != lastUpdateTime) {
+        lastUpdateTime = date;
 
-        if (date != lastUpdateTime) {
-          lastUpdateTime = date;
+        console.log("update");
 
-          console.log("update");
+        // je suppose que les bières sont toujours à la même position
+        // on ajoute le last price dans initialData
+        for (var i = 0; i < json.length; i++) {
+          initialData[i].prices.push(json[i].last_price);
+        }
 
-          // je suppose que les bières sont toujours à la même position
-          // on ajoute le last price dans initialData
-          for (var i = 0; i < json.length; i++) {
-            initialData[i].prices.push(json[i].last_price);
-          }
+        // mise à jour
+        var data = selectOnly(initialData, categories[currentPage]);
+        upGraph(data, nomCategories[currentPage]);
+        upTable(data, 300);
 
-          // mise à jour
-          upGraph(initialData);
-          upTable(initialData, 300);
+        if (firstUpdate) {
+          console.log("début alternance");
+          firstUpdate = false;
+          window.clearTimeout(firstTimeout);
+          window.setInterval(alternerPage, 30000);
         }
       }
-    });
-  }, delay);
+    }
+  });
 };
 
 // var pages = [
