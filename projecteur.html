@@ -22,9 +22,16 @@
             <thead><tr><td>Bière</td><td>Prix</td><td>Prix original</td><td>Variation</td></tr></thead>
             <tbody></tbody>
         </table>
-        <svg id="graph"></svg>
-        <!-- <div class="chart"></div> -->
-        
+        <svg id="graph">
+            <defs>
+                <clipPath id="clipPath">
+                    <rect id="clipRect" />
+                </clipPath>
+            </defs>
+
+            <g style="clip-path: url(#clipPath);" id="lines"></g>
+        </svg>
+
         <script type="text/javascript" src="dist/projo-app.js"></script>
     </body>
 </html>

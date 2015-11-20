@@ -33,7 +33,11 @@ var graph = d3.select("#graph")
       .attr("width", width)
       .attr("height", height);
 
-var beers = graph.selectAll("g.bar");
+d3.select("#clipRect")
+  .attr("width", width - margin.right - margin.left)
+  .attr("height", height - margin.top - margin.bottom)
+  .attr("x", margin.left)
+  .attr("y", margin.bottom);
 
 var enterLines = function(lines, data) {
   var len = data[0].prices.length - 1;
@@ -42,7 +46,6 @@ var enterLines = function(lines, data) {
     .attr("x1", (d, i, j) => x(len - i))
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("stroke", (d, i, j) => couleurs[j]) // couleur
-    .attr("stroke-width", 0)
     .attr("y1", yIn)
     .attr("y2", yIn);
 };
@@ -55,18 +58,10 @@ var upGraph = function(data, titre, forceColorIndex) {
   } else {
     nom.html(titre).style("color", couleurs[forceColorIndex]);
   }
-  /*if (data.length == 1) {
-    var last = data[0].prices[data[0].prices.length - 1];
-    nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation))
-      .style("color", couleurs[0]);
-  } else {
-    nom.html("Multiple").style("color", "white");
-  }*/
 
-  var g = graph.selectAll("g.bar").data(data, d => d.id);
+  var g = graph.select("#lines").selectAll("g").data(data, d => d.id);
 
-  // creer un groupe pour les nouvelles bières
-  g.enter().append("g").classed("bar", true);
+  g.enter().append("g");
 
   // supprimer les anciennes en faisant disparaitre chaque ligne vers le haut
   g.exit().transition().each(function(d, i) {
@@ -87,8 +82,7 @@ var upGraph = function(data, titre, forceColorIndex) {
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("y1", d => y(d.price))
     .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price))
-    .attr("stroke", (d, i, j) => couleurs[forceColorIndex === undefined ? j : forceColorIndex])
-    .attr("stroke-width", (d, i) => ((len - i) > pointsAffiches || i == len) ? 0 : strokeWidthBars);
+    .attr("stroke", (d, i, j) => couleurs[forceColorIndex === undefined ? j : forceColorIndex]);
 };
 
 var later = function(data, timeout, titre) {
