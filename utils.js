@@ -9,7 +9,7 @@ export function guid() {
 }
 
 export function formatPrice(price) {
-  return (price / 100).toFixed(2).replace(".", ",");
+  return (price / 100).toFixed(2).replace(".", ",") + " €";
 }
 
 export function formatVariation(variation) {

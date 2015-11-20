@@ -67,7 +67,7 @@ function upGraph(data, titre, forceColorIndex) {
 // tableau des prix
 function rows(biere) {
   var last = biere.prices[biere.prices.length - 1];
-  return [biere.name, formatPrice(last.price), formatPrice(biere.prices[0].price), formatVariation(last.variation)];
+  return [biere.name, formatPrice(last.price), /*formatPrice(biere.prices[0].price),*/ formatVariation(last.variation)];
 };
 
 function creerTable(data) {
@@ -210,8 +210,8 @@ verticalGuide.selectAll('path')
 verticalGuide.selectAll('line')
     .style({stroke: "#f0f0f0"});
 verticalGuide.selectAll('text')
-  .text(d => formatPrice(d) + "€")
-  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
+  .text(d => formatPrice(d))
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5, fill: 'white'});
 
 var xAxis = d3.svg.axis()
       .scale(x)
@@ -227,6 +227,6 @@ horizontalGuide.selectAll('line')
     .style({stroke: "#f0f0f0"});
 horizontalGuide.selectAll('text')
   .text(d => d == 0 ? "Now" : ("-" + d * minutesStep + " m"))
-  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5, fill: 'white'});
 
 d3.json(urls.history + "?r=" + guid(), handleHistory);

@@ -1,12 +1,12 @@
 export var urls = {last: "http://92.222.5.101:8080/ws/api/last",
                    history: "http://92.222.5.101:8080/ws/api/history"
                   };
-export var width = 1100,
-    height = 700,
+export var width = 1200,
+    height = 950,
     transitionDuration = 1000,
     prixMax = 350,
     prixMin = 100,
-    pointsAffiches = 6,
+    pointsAffiches = 15,
     minutesStep = 1,
     margin = {top: 30, right: 30, bottom: 30, left: 80},
     yIn = height + 1,

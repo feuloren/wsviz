@@ -13,13 +13,32 @@
          #prix {
              float: right;
          }
+
+         h1 {
+             margin-top: 30px;
+             margin-left: 90px;
+         }
+
+         table {
+             width: 600px;
+         }
+         
+         td {
+             font-size: 1.4em;
+             /*text-align: right;*/
+             padding: 5px 10px 5px 10px;
+         }
+         
+         thead td {
+             font-weight: bold;
+         }
         </style>
     </head>
     <body>
         <!-- <svg class="chart"></svg> -->
-        <p id="nom">Multiple</p>
+        <h1 id="nom">Multiple</h2>
         <table id="prix">
-            <thead><tr><td>Bière</td><td>Prix</td><td>Prix original</td><td>Variation</td></tr></thead>
+            <thead><tr><td>Bière</td><td>Prix</td><!--<td>Prix original</td>--><td>Variation</td></tr></thead>
             <tbody></tbody>
         </table>
         <svg id="graph">
