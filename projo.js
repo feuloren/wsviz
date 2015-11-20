@@ -27,6 +27,7 @@ function enterLines(lines, data) {
     .attr("x1", (d, i, j) => x(len - i))
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("stroke", (d, i, j) => couleurs[j]) // couleur
+    .attr("stroke-width", 3)
     .attr("y1", yIn)
     .attr("y2", yIn);
 };
