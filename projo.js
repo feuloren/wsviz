@@ -186,13 +186,13 @@ var alternerPage = function(duration) {
     upGraph(data, nomCategories[currentCategory]);
     upTable(data, 300);
   } else {
-    displayOneIndex = (displayOneIndex + 1) % initialData.length;
-
     var biere = initialData[displayOneIndex];
     var data = selectOnly(initialData, biere.category);
 
     upGraph([biere], biere.name, data.indexOf(biere));
     upTable(data, 300);
+
+    displayOneIndex = (displayOneIndex + 1) % initialData.length;
   }
 
   currentTick = (currentTick + 1) % 12;
