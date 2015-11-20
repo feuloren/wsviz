@@ -1,5 +1,6 @@
 import d3 from "d3";
 import {urls} from "./config.js";
+import {guid, formatPrice, formatVariation} from "./utils.js";
 
 var width = 1100,
     height = 700,
@@ -47,22 +48,6 @@ var enterLines = function(lines, data) {
 };
 
 var nom = d3.select("#nom");
-
-function formatPrice(price) {
-  return (price / 100).toFixed(2).replace(".", ",");
-}
-
-function formatVariation(variation) {
-  var sym;
-  if (variation == 0) {
-    sym = "=";
-  } else if (variation > 0) {
-    sym = "↗";
-  } else {
-    sym = "↙";
-  }
-  return sym + " (" + (variation >= 0 ? "+" : "") + variation.toFixed(2).replace(".", ",") + "%)";
-}
 
 var upGraph = function(data, titre) {
   nom.html(titre).style("color", "white");
@@ -166,24 +151,6 @@ var upTable = function(data, timeout) {
   }, timeout);
 };
 
-//later(data, 1);
-//upTable(data, 1);
-// later([data[0], data[2]], 2000);
-
-// later([data2[0], data2[2]], 3000);
-//later(data2, 2000);
-//upTable(data2, 2500);
-
-// later([data3[0], data3[2]], 7000);
-//upTable(data3, 4500);
-
-// later([data3[1]],  9000);
-// later([data3[3]], 10500);
-// later([data3[2]], 13000);
-// later([data3[4]], 15500);
-// later([data3[0]], 17000);
-//later(data3, 4500);
-
 var initialData;
 var lastUpdateTime = "";
 var currentPage = "BOUTEILLE";
@@ -205,7 +172,7 @@ var alternerPage = function(duration) {
 };
 
 var firstTimeout;
-d3.json(urls.history, (error, json) => {
+d3.json(urls.history + "?r=" + guid(), (error, json) => {
   if (error !== null) {
     console.log(error);
     return;
@@ -228,7 +195,7 @@ d3.json(urls.history, (error, json) => {
 
 var firstUpdate = true;
 var doUpdates = function() {
-  d3.json(urls.last, (error, json) => {
+  d3.json(urls.last + "?r=" + guid(), (error, json) => {
     if (error != null) {
       console.log(error);
       return;
@@ -264,8 +231,3 @@ var doUpdates = function() {
     }
   });
 };
-
-// var pages = [
-  // pressions,
-  // bouteilles,
-// ];
