@@ -1,45 +1,26 @@
 import d3 from "d3";
-import {urls} from "./config.js";
+import {urls, width, height, transitionDuration, prixMax, prixMin, pointsAffiches, minutesStep, margin, yIn, yOut, categories, nomCategories, updateDelay, alterneDelay, couleurs} from "./config.js";
 import {guid, formatPrice, formatVariation} from "./utils.js";
 
-var width = 1100,
-    height = 700,
-    barHeight = 20,
-    animDuration = 1500,
-    transitionDuration = 1000,
-    prixMax = 350,
-    prixMin = 100,
-    pointsAffiches = 6,
-    strokeWidthBars = 2,
-    minutesStep = 1,
-    margin = {top: 30, right: 30, bottom: 30, left: 80},
-    yIn = height + 1,
-    yOut = -50,
-    categories = {PRESSION: 11, BOUTEILLE: 10},
-    nomCategories = {PRESSION: "Bières Pression", BOUTEILLE: "Bières Bouteille"},
-    updateDelay = 10000;
-
-var couleurs = ["#19E1FF", "#FFFF40", "#FF81CB", "#65FF19", "#FF8300", "#F1E4F3", "#A30015", "#DEF6CA", "#C6A15B", "#DF10FA", "#6EEB83", "#FE621D"];
-
+// scales (adaptation données du domaine (prix, temps) => pixels)
 var x = d3.scale.linear().range([width - margin.right, margin.left]).domain([0, pointsAffiches]);
 var y = d3.scale.linear().range([height - margin.top, margin.bottom]).domain([prixMin, prixMax]);
 
-var data = require("./history.js");
-var data2 = require("./history2.js");
-var data3 = require("./history3.js");
-
-// graphique
+// DOM elements
 var graph = d3.select("#graph")
       .attr("width", width)
       .attr("height", height);
+var nom = d3.select("#nom");
+var tbody = d3.select("#prix tbody");
 
+// clipping de l'intérieur du graph
 d3.select("#clipRect")
   .attr("width", width - margin.right - margin.left)
   .attr("height", height - margin.top - margin.bottom)
   .attr("x", margin.left)
   .attr("y", margin.bottom);
 
-var enterLines = function(lines, data) {
+function enterLines(lines, data) {
   var len = data[0].prices.length - 1;
   lines.enter()
     .append("line")
@@ -50,9 +31,7 @@ var enterLines = function(lines, data) {
     .attr("y2", yIn);
 };
 
-var nom = d3.select("#nom");
-
-var upGraph = function(data, titre, forceColorIndex) {
+function upGraph(data, titre, forceColorIndex) {
   if (forceColorIndex === undefined) {
     nom.html(titre).style("color", "white");
   } else {
@@ -85,51 +64,13 @@ var upGraph = function(data, titre, forceColorIndex) {
     .attr("stroke", (d, i, j) => couleurs[forceColorIndex === undefined ? j : forceColorIndex]);
 };
 
-var later = function(data, timeout, titre) {
-  window.setTimeout(() => upGraph(data, titre), timeout);
-};
-
-// création des axes
-var vAxis = d3.svg.axis()
-      .scale(y)
-      .orient('left')
-      .ticks((prixMax - prixMin) / 10);
-
-var verticalGuide = graph.append('g');
-vAxis(verticalGuide);
-verticalGuide.attr('transform', 'translate(' + margin.left + ')');
-verticalGuide.selectAll('path')
-    .style({fill: 'none', stroke: "#f0f0f0"});
-verticalGuide.selectAll('line')
-    .style({stroke: "#f0f0f0"});
-verticalGuide.selectAll('text')
-  .text(d => formatPrice(d) + "€")
-  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
-
-var xAxis = d3.svg.axis()
-      .scale(x)
-      .orient('bottom')
-      .ticks(pointsAffiches);
-
-var horizontalGuide = graph.append('g');
-xAxis(horizontalGuide);
-horizontalGuide.attr('transform', 'translate(0, ' + (height - margin.bottom) + ')');
-horizontalGuide.selectAll('path')
-    .style({fill: 'none', stroke: "#f0f0f0"});
-horizontalGuide.selectAll('line')
-    .style({stroke: "#f0f0f0"});
-horizontalGuide.selectAll('text')
-  .text(d => d == 0 ? "Now" : ("-" + d * minutesStep + " m"))
-  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
-
 // tableau des prix
-var tbody = d3.select("#prix tbody");
-var rows = function(biere) {
+function rows(biere) {
   var last = biere.prices[biere.prices.length - 1];
   return [biere.name, formatPrice(last.price), formatPrice(biere.prices[0].price), formatVariation(last.variation)];
 };
 
-var creerTable = function(data) {
+function creerTable(data) {
   var tr = tbody.selectAll("tr").data(data, d => d.id);
   tr.enter().append("tr");
   tr.exit().remove();
@@ -138,7 +79,7 @@ var creerTable = function(data) {
         .html(d => d);
 };
 
-var upTable = function(data, timeout) {
+function upTable(data, timeout) {
   creerTable(data);
   window.setTimeout(() => {
     var tr = tbody.selectAll("tr").data(data);
@@ -149,13 +90,13 @@ var upTable = function(data, timeout) {
   }, timeout);
 };
 
+var selectOnly = (data, categorie) => data.filter(b => b.category == categorie);
+
 var initialData;
 var lastUpdateTime = "";
 var currentCategory = "BOUTEILLE";
 var displayOneIndex = 0;
 var currentTick = 0;
-
-var selectOnly = (data, categorie) => data.filter(b => b.category == categorie);
 
 // principe de l'alternance des pages:
 // chaque tick fait 5 secondes
@@ -193,7 +134,7 @@ var alternerPage = function(duration) {
 };
 
 var firstTimeout;
-d3.json(urls.history + "?r=" + guid(), (error, json) => {
+function handleHistory(error, json) {
   if (error !== null) {
     console.log(error);
     return;
@@ -211,10 +152,10 @@ d3.json(urls.history + "?r=" + guid(), (error, json) => {
   }
 
   window.setInterval(doUpdates, updateDelay);
-});
+};
 
 var firstUpdate = true;
-var doUpdates = function() {
+function doUpdates() {
   d3.json(urls.last + "?r=" + guid(), (error, json) => {
     if (error != null) {
       console.log(error);
@@ -246,9 +187,46 @@ var doUpdates = function() {
           console.log("début alternance");
           firstUpdate = false;
           window.clearTimeout(firstTimeout);
-          window.setInterval(alternerPage, 5000);
+          window.setInterval(alternerPage, alterneDelay);
         }
       }
     }
   });
 };
+
+/* main */
+
+// création des axes
+var vAxis = d3.svg.axis()
+      .scale(y)
+      .orient('left')
+      .ticks((prixMax - prixMin) / 10);
+
+var verticalGuide = graph.append('g');
+vAxis(verticalGuide);
+verticalGuide.attr('transform', 'translate(' + margin.left + ')');
+verticalGuide.selectAll('path')
+    .style({fill: 'none', stroke: "#f0f0f0"});
+verticalGuide.selectAll('line')
+    .style({stroke: "#f0f0f0"});
+verticalGuide.selectAll('text')
+  .text(d => formatPrice(d) + "€")
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
+
+var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient('bottom')
+      .ticks(pointsAffiches);
+
+var horizontalGuide = graph.append('g');
+xAxis(horizontalGuide);
+horizontalGuide.attr('transform', 'translate(0, ' + (height - margin.bottom) + ')');
+horizontalGuide.selectAll('path')
+    .style({fill: 'none', stroke: "#f0f0f0"});
+horizontalGuide.selectAll('line')
+    .style({stroke: "#f0f0f0"});
+horizontalGuide.selectAll('text')
+  .text(d => d == 0 ? "Now" : ("-" + d * minutesStep + " m"))
+  .style({stroke: "#f0f0f0", "stroke-width": 0.5});
+
+d3.json(urls.history + "?r=" + guid(), handleHistory);
