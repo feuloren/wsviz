@@ -49,8 +49,12 @@ var enterLines = function(lines, data) {
 
 var nom = d3.select("#nom");
 
-var upGraph = function(data, titre) {
-  nom.html(titre).style("color", "white");
+var upGraph = function(data, titre, forceColorIndex) {
+  if (forceColorIndex === undefined) {
+    nom.html(titre).style("color", "white");
+  } else {
+    nom.html(titre).style("color", couleurs[forceColorIndex]);
+  }
   /*if (data.length == 1) {
     var last = data[0].prices[data[0].prices.length - 1];
     nom.html(data[0].name + " - " + formatPrice(last.price) + "€ - " + formatVariation(last.variation))
@@ -83,7 +87,7 @@ var upGraph = function(data, titre) {
     .attr("x2", (d, i, j) => x(len == 0 ? len : len - i - 1))
     .attr("y1", d => y(d.price))
     .attr("y2", (d, i, j) => y(data[j].prices[d3.min([i + 1, len])].price))
-    .attr("stroke", (d, i, j) => couleurs[j])
+    .attr("stroke", (d, i, j) => couleurs[forceColorIndex === undefined ? j : forceColorIndex])
     .attr("stroke-width", (d, i) => ((len - i) > pointsAffiches || i == len) ? 0 : strokeWidthBars);
 };
 
@@ -153,22 +157,45 @@ var upTable = function(data, timeout) {
 
 var initialData;
 var lastUpdateTime = "";
-var currentPage = "BOUTEILLE";
+var currentCategory = "BOUTEILLE";
+var displayOneIndex = 0;
+var currentTick = 0;
 
 var selectOnly = (data, categorie) => data.filter(b => b.category == categorie);
 
-var alternerPage = function(duration) {
-  if (currentPage == "PRESSION") {
-    currentPage = "BOUTEILLE";
-  } else {
-    currentPage = "PRESSION";
-  }
-  console.log(currentPage);
+// principe de l'alternance des pages:
+// chaque tick fait 5 secondes
+// à chaque mise à jour, currentTick = 0
+// pendant 2 ticks après une mise à jour (càd ticks 0 et 1) on affiche bouteilles ou pressions
+// après on affiche une seule bière à la fois pendant en changeant tous les ticks
+// 2 ticks avant la mise à jour (càd ticks 10 et 11) on affiche bouteilles ou pression
 
-  var data = selectOnly(initialData, categories[currentPage]);
-  console.log(data);
-  upGraph(data, nomCategories[currentPage]);
-  upTable(data, 300);
+var alternerPage = function(duration) {
+  console.log("tick " + currentTick);
+
+  if (currentTick == 2) {
+    if (currentCategory == "PRESSION") {
+      currentCategory = "BOUTEILLE";
+    } else {
+      currentCategory = "PRESSION";
+    }
+  }
+
+  if (currentTick < 2 || currentTick >= 10) {
+    var data = selectOnly(initialData, categories[currentCategory]);
+    upGraph(data, nomCategories[currentCategory]);
+    upTable(data, 300);
+  } else {
+    displayOneIndex = (displayOneIndex + 1) % initialData.length;
+
+    var biere = initialData[displayOneIndex];
+    var data = selectOnly(initialData, biere.category);
+
+    upGraph([biere], biere.name, data.indexOf(biere));
+    upTable(data, 300);
+  }
+
+  currentTick = (currentTick + 1) % 12;
 };
 
 var firstTimeout;
@@ -179,9 +206,8 @@ d3.json(urls.history + "?r=" + guid(), (error, json) => {
   }
   initialData = json;
 
-  var data = selectOnly(initialData, categories[currentPage]);
-  console.log(data);
-  upGraph(data, nomCategories[currentPage]);
+  var data = selectOnly(initialData, categories[currentCategory]);
+  upGraph(data, nomCategories[currentCategory]);
   upTable(data, 300);
   firstTimeout = window.setTimeout(() => alternerPage(30000), 20000);
 
@@ -217,15 +243,16 @@ var doUpdates = function() {
         }
 
         // mise à jour
-        var data = selectOnly(initialData, categories[currentPage]);
-        upGraph(data, nomCategories[currentPage]);
+        currentTick = 0;
+        var data = selectOnly(initialData, categories[currentCategory]);
+        upGraph(data, nomCategories[currentCategory]);
         upTable(data, 300);
 
         if (firstUpdate) {
           console.log("début alternance");
           firstUpdate = false;
           window.clearTimeout(firstTimeout);
-          window.setInterval(alternerPage, 30000);
+          window.setInterval(alternerPage, 5000);
         }
       }
     }
